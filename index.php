@@ -787,7 +787,74 @@ function closeEditPartyModal() {
                                                 Delete
                                             </button>
                                         </form>
+                                        <button type="button" onclick='openEditUserModal(<?php echo json_encode([
+                                            "user_id" => $user["user_id"],
+                                            "full_name" => $user["full_name"],
+                                            "email" => $user["email"],
+                                            "gender" => $user["gender"],
+                                            "mobile_number" => $user["mobile_number"],
+                                            "nid_number" => $user["nid_number"],
+                                            "photo_url" => $user["photo_url"]
+                                        ]); ?>)' class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition duration-300 ml-2">Edit</button>
                                     </td>
+<!-- Edit User Modal -->
+<div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative">
+    <button onclick="closeEditUserModal()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit User</h2>
+    <form method="POST" id="editUserForm" class="space-y-4">
+      <input type="hidden" name="edit_user_id" id="edit_user_id">
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Full Name</label>
+        <input type="text" name="edit_full_name" id="edit_full_name" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Email Address</label>
+        <input type="email" name="edit_email" id="edit_email" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Gender</label>
+        <select name="edit_gender" id="edit_gender" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Mobile Number</label>
+        <input type="text" name="edit_mobile_number" id="edit_mobile_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">NID Number</label>
+        <input type="text" name="edit_nid_number" id="edit_nid_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Profile Photo URL</label>
+        <input type="url" name="edit_photo_url" id="edit_photo_url" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+      </div>
+      <div>
+        <button type="submit" name="update_user" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-300">Update User</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditUserModal(user) {
+  document.getElementById('edit_user_id').value = user.user_id;
+  document.getElementById('edit_full_name').value = user.full_name;
+  document.getElementById('edit_email').value = user.email;
+  document.getElementById('edit_gender').value = user.gender;
+  document.getElementById('edit_mobile_number').value = user.mobile_number;
+  document.getElementById('edit_nid_number').value = user.nid_number;
+  document.getElementById('edit_photo_url').value = user.photo_url;
+  document.getElementById('editUserModal').classList.remove('hidden');
+}
+function closeEditUserModal() {
+  document.getElementById('editUserModal').classList.add('hidden');
+}
+</script>
                                 </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
