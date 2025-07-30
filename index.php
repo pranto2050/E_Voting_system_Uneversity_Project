@@ -136,6 +136,44 @@ if (isset($_POST['update_party']) && isset($_SESSION['admin_logged_in'])) {
     exit;
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Update Candidate (Admin)
+    if (isset($_POST['update_candidate']) && isset($_SESSION['admin_logged_in'])) {
+        $candidate_id = $_POST['edit_candidate_id'];
+        $candidate_name = trim($_POST['edit_candidate_name'] ?? '');
+        $party = $_POST['edit_party'] ?? '';
+        $photo_url = $_POST['edit_photo_url'] ?: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face';
+        $details = $_POST['edit_details'] ?? '';
+        $mobile_number = trim($_POST['edit_mobile_number'] ?? '');
+        $id_card_number = trim($_POST['edit_id_card_number'] ?? '');
+        $gender = $_POST['edit_gender'] ?? '';
+        $age = $_POST['edit_age'] ?? '';
+        $address = trim($_POST['edit_address'] ?? '');
+
+        // Validate required fields
+        if (empty($candidate_name)) {
+            $error_message = "Candidate Name is required!";
+        } elseif (empty($mobile_number)) {
+            $error_message = "Mobile Number is required!";
+        } elseif (empty($address)) {
+            $error_message = "Candidate Address is required!";
+        } elseif (empty($id_card_number)) {
+            $error_message = "ID Card Number is required!";
+        } else {
+            // Check if id_card_number is unique (excluding current candidate)
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM candidates WHERE id_card_number = ? AND candidate_id != ?");
+            $stmt->execute([$id_card_number, $candidate_id]);
+            if ($stmt->fetchColumn() > 0) {
+                $error_message = "ID Card Number already exists! Please enter a unique ID.";
+            } else {
+                $stmt = $pdo->prepare("UPDATE candidates SET full_name=?, party_or_position=?, photo_url=?, details=?, mobile_number=?, id_card_number=?, gender=?, age=?, address=? WHERE candidate_id=?");
+                if ($stmt->execute([$candidate_name, $party, $photo_url, $details, $mobile_number, $id_card_number, $gender, $age, $address, $candidate_id])) {
+                    $success_message = "Candidate updated successfully!";
+                } else {
+                    $error_message = "Failed to update candidate.";
+                }
+            }
+        }
+    }
     
     // Admin Login
     if (isset($_POST['admin_login'])) {
@@ -218,16 +256,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Add Candidate (Admin)
     if (isset($_POST['add_candidate']) && isset($_SESSION['admin_logged_in'])) {
-        $candidate_name = $_POST['candidate_name'];
-        $party = $_POST['party'];
+        $candidate_name = trim($_POST['candidate_name'] ?? '');
+        $party = $_POST['party'] ?? '';
         $photo_url = $_POST['photo_url'] ?: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face';
-        $details = $_POST['details'];
-        
+        $details = $_POST['details'] ?? '';
+        $mobile_number = trim($_POST['mobile_number'] ?? '');
+        $id_card_number = trim($_POST['id_card_number'] ?? '');
+        $gender = $_POST['gender'] ?? '';
+        $age = $_POST['age'] ?? '';
         $candidate_id = 'CAND' . date('ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-        
-        $stmt = $pdo->prepare("INSERT INTO candidates (candidate_id, full_name, party_or_position, photo_url, details, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-        if ($stmt->execute([$candidate_id, $candidate_name, $party, $photo_url, $details])) {
-            $success_message = "Candidate added successfully!";
+        $address = trim($_POST['candidates_address'] ?? '');
+
+        // Validate required fields
+        if (empty($candidate_name)) {
+            $error_message = "Candidate Name is required!";
+        } elseif (empty($mobile_number)) {
+            $error_message = "Mobile Number is required!";
+        } elseif (empty($address)) {
+            $error_message = "Candidate Address is required!";
+        } elseif (empty($id_card_number)) {
+            $error_message = "ID Card Number is required!";
+        } else {
+            // Check if id_card_number is unique
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM candidates WHERE id_card_number = ?");
+            $stmt->execute([$id_card_number]);
+            if ($stmt->fetchColumn() > 0) {
+                $error_message = "ID Card Number already exists! Please enter a unique ID.";
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO candidates (candidate_id, full_name, party_or_position, photo_url, details, created_at, mobile_number, id_card_number, gender, age, address) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)");
+                if ($stmt->execute([$candidate_id, $candidate_name, $party, $photo_url, $details, $mobile_number, $id_card_number, $gender, $age, $address])) {
+                    $success_message = "Candidate added successfully!";
+                } else {
+                    $error_message = "Failed to add candidate.";
+                }
+            }
         }
     }
     
@@ -633,12 +695,13 @@ function closeEditPartyModal() {
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Candidate</h2>
                 <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-gray-700 font-medium mb-2">Candidate Name</label>
+                        <label class="block text-gray-700 font-medium mb-2">Candidate Name <span class="text-red-600">*</span></label>
                         <input type="text" name="candidate_name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Full name" required>
                     </div>
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Party/Position</label>
                         <select name="party" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            <!-- <label class="block text-gray-700 font-medium mb-2">Candidate Name <span class="text-red-600">*</span></label> -->
                             <option value="">Select Party</option>
                             <?php
                             $party_stmt = $pdo->query("SELECT party_name FROM party_position ORDER BY party_name ASC");
@@ -647,6 +710,31 @@ function closeEditPartyModal() {
                                 <option value="<?php echo htmlspecialchars($party_row['party_name']); ?>"><?php echo htmlspecialchars($party_row['party_name']); ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Mobile Number <span class="text-red-600">*</span></label>
+                        <input type="text" name="mobile_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Mobile number" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">ID Card Number <span class="text-red-600">*</span></label>
+                        <input type="text" name="id_card_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ID card number" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Gender</label>
+                        <select name="gender" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Age</label>
+                        <input type="number" name="age" min="18" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Age">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Candidate Address <span class="text-red-600">*</span></label>
+                        <input type="text" name="candidates_address" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Address" required>
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-gray-700 font-medium mb-2">Photo URL</label>
@@ -671,7 +759,6 @@ function closeEditPartyModal() {
                     <?php
                     $stmt = $pdo->query("SELECT * FROM candidates ORDER BY created_at DESC");
                     $candidates = $stmt->fetchAll();
-                    
                     if (empty($candidates)): ?>
                         <p class="text-gray-500 text-center col-span-full">No candidates added yet.</p>
                     <?php else: ?>
@@ -683,17 +770,105 @@ function closeEditPartyModal() {
                                 <p class="text-blue-600 font-medium"><?php echo htmlspecialchars($candidate['party_or_position']); ?></p>
                             </div>
                             <p class="text-gray-600 text-sm mb-4"><?php echo htmlspecialchars($candidate['details']); ?></p>
-                            <form method="POST" onsubmit="return confirm('Are you sure you want to remove this candidate?')">
-                                <input type="hidden" name="candidate_id" value="<?php echo $candidate['candidate_id']; ?>">
-                                <button type="submit" name="delete_candidate" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-                                    Remove Candidate
-                                </button>
-                            </form>
+                            <div class="flex flex-col gap-2">
+                                <form method="POST" onsubmit="return confirm('Are you sure you want to remove this candidate?')">
+                                    <input type="hidden" name="candidate_id" value="<?php echo $candidate['candidate_id']; ?>">
+                                    <button type="submit" name="delete_candidate" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                                        Remove Candidate
+                                    </button>
+                                </form>
+                                <button type="button" onclick='openEditCandidateModal(<?php echo json_encode([
+                                    "candidate_id" => $candidate["candidate_id"],
+                                    "full_name" => $candidate["full_name"],
+                                    "party_or_position" => $candidate["party_or_position"],
+                                    "photo_url" => $candidate["photo_url"],
+                                    "details" => $candidate["details"],
+                                    "mobile_number" => $candidate["mobile_number"],
+                                    "id_card_number" => $candidate["id_card_number"],
+                                    "gender" => $candidate["gender"],
+                                    "age" => $candidate["age"],
+                                    "address" => $candidate["address"]
+                                ]); ?>)' class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">Edit</button>
+                            </div>
                         </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
+
+<!-- Edit Candidate Modal -->
+<div id="editCandidateModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative" style="max-height:90vh; overflow-y:auto;">
+    <button onclick="closeEditCandidateModal()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Candidate</h2>
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="edit_candidate_id" id="edit_candidate_id">
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Candidate Name <span class="text-red-600">*</span></label>
+        <input type="text" name="edit_candidate_name" id="edit_candidate_name" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Party/Position</label>
+        <input type="text" name="edit_party" id="edit_party" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Mobile Number <span class="text-red-600">*</span></label>
+        <input type="text" name="edit_mobile_number" id="edit_mobile_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">ID Card Number <span class="text-red-600">*</span></label>
+        <input type="text" name="edit_id_card_number" id="edit_id_card_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Gender</label>
+        <select name="edit_gender" id="edit_gender" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Age</label>
+        <input type="number" name="edit_age" id="edit_age" min="18" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Candidate Address <span class="text-red-600">*</span></label>
+        <input type="text" name="edit_address" id="edit_address" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Photo URL</label>
+        <input type="url" name="edit_photo_url" id="edit_photo_url" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-2">Candidate Details</label>
+        <textarea name="edit_details" id="edit_details" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg"></textarea>
+      </div>
+      <div>
+        <button type="submit" name="update_candidate" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-300">Update Candidate</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditCandidateModal(candidate) {
+  document.getElementById('edit_candidate_id').value = candidate.candidate_id;
+  document.getElementById('edit_candidate_name').value = candidate.full_name;
+  document.getElementById('edit_party').value = candidate.party_or_position;
+  document.getElementById('edit_mobile_number').value = candidate.mobile_number;
+  document.getElementById('edit_id_card_number').value = candidate.id_card_number;
+  document.getElementById('edit_gender').value = candidate.gender;
+  document.getElementById('edit_age').value = candidate.age;
+  document.getElementById('edit_address').value = candidate.address;
+  document.getElementById('edit_photo_url').value = candidate.photo_url;
+  document.getElementById('edit_details').value = candidate.details;
+  document.getElementById('editCandidateModal').classList.remove('hidden');
+}
+function closeEditCandidateModal() {
+  document.getElementById('editCandidateModal').classList.add('hidden');
+}
+</script>
         </div>
 
         <?php elseif ($current_tab === 'users'): ?>
