@@ -809,7 +809,15 @@ function closeEditPartyModal() {
       </div>
       <div>
         <label class="block text-gray-700 font-medium mb-2">Party/Position</label>
-        <input type="text" name="edit_party" id="edit_party" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+        <select name="edit_party" id="edit_party" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+          <option value="">Select Party</option>
+          <?php
+          $party_stmt = $pdo->query("SELECT party_name FROM party_position ORDER BY party_name ASC");
+          $party_options = $party_stmt->fetchAll();
+          foreach ($party_options as $party_row): ?>
+            <option value="<?php echo htmlspecialchars($party_row['party_name']); ?>"><?php echo htmlspecialchars($party_row['party_name']); ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
       <div>
         <label class="block text-gray-700 font-medium mb-2">Mobile Number <span class="text-red-600">*</span></label>
@@ -855,7 +863,14 @@ function closeEditPartyModal() {
 function openEditCandidateModal(candidate) {
   document.getElementById('edit_candidate_id').value = candidate.candidate_id;
   document.getElementById('edit_candidate_name').value = candidate.full_name;
-  document.getElementById('edit_party').value = candidate.party_or_position;
+  // Set the party select option
+  var partySelect = document.getElementById('edit_party');
+  for (var i = 0; i < partySelect.options.length; i++) {
+    if (partySelect.options[i].value === candidate.party_or_position) {
+      partySelect.selectedIndex = i;
+      break;
+    }
+  }
   document.getElementById('edit_mobile_number').value = candidate.mobile_number;
   document.getElementById('edit_id_card_number').value = candidate.id_card_number;
   document.getElementById('edit_gender').value = candidate.gender;
