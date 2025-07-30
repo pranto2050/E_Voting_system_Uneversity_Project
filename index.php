@@ -235,9 +235,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['user_login'])) {
         $email_or_id = $_POST['email_or_id'];
         $password = $_POST['password'];
-        
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE (email = ? OR user_id = ?) AND password = ?");
-        $stmt->execute([$email_or_id, $email_or_id, $password]);
+        // Allow login with email, user_id, nid_number, or mobile_number
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE (email = ? OR user_id = ? OR nid_number = ? OR mobile_number = ?) AND password = ?");
+        $stmt->execute([$email_or_id, $email_or_id, $email_or_id, $email_or_id, $password]);
         $user = $stmt->fetch();
         
         if ($user) {
@@ -248,6 +248,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['user_name'] = $user['full_name'];
                 $_SESSION['user_photo'] = $user['photo_url'];
+                // Redirect to user dashboard after successful login
+                header("Location: ?page=user_dashboard");
+                exit;
             }
         } else {
             $error_message = "Invalid credentials!";
@@ -472,8 +475,8 @@ if (isset($_SESSION['success_message'])) {
         
         <form method="POST" class="space-y-6">
             <div>
-                <label class="block text-gray-700 font-medium mb-2">Email/User ID</label>
-                <input type="text" name="email_or_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your email or user ID" required>
+                <label class="block text-gray-700 font-medium mb-2">Email / User ID / NID Number / Mobile Number</label>
+                <input type="text" name="email_or_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your email, user ID, NID number, or mobile number" required>
             </div>
             <div>
                 <label class="block text-gray-700 font-medium mb-2">Password</label>
@@ -838,7 +841,7 @@ function closeEditPartyModal() {
       </div>
       <div>
         <label class="block text-gray-700 font-medium mb-2">Age</label>
-        <input type="number" name="edit_age" id="edit_age" min="18" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+        <input type="number" name="edit_age" id="edit_age" min="18" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Age">
       </div>
       <div>
         <label class="block text-gray-700 font-medium mb-2">Candidate Address <span class="text-red-600">*</span></label>
